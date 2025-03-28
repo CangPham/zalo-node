@@ -28,7 +28,9 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "pnpm build && pnpm lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "prepublishOnly": "pnpm build && pnpm lint -c .eslintrc.prepublish.js nodes credentials package.json",
+    "watch": "concurrently \"pnpm run watch\" \"pnpm run start:n8n\"",
+    "start:n8n": "nodemon --watch dist --exec \"npx n8n start\""
   },
   "files": [
     "dist"
@@ -46,13 +48,20 @@
   },
   "devDependencies": {
     "@typescript-eslint/parser": "^7.15.0",
+    "concurrently": "^9.1.2",
     "eslint": "^8.56.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.1",
     "gulp": "^4.0.2",
+    "nodemon": "^3.1.9",
     "prettier": "^3.3.2",
     "typescript": "^5.5.3"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
+  },
+  "dependencies": {
+    "n8n": "^1.84.1",
+    "pnpm": "^10.6.5",
+    "zca-js": "2.0.0-beta.14"
   }
 }
