@@ -9,37 +9,38 @@ import {
 import { API, Zalo } from 'zca-js';
 let api: API | undefined;
 
-export class ZaloFindUserInformationByPhoneNumber implements INodeType {
+export class ZaloAddGroupDeputy implements INodeType {
 
 	description: INodeTypeDescription = {
-		displayName: 'Zalo Find User Information By PhoneNumber (Cookie)',
-		name: 'zaloFindUserInformationByPhoneNumber',
+		displayName: 'Zalo Add Group Deputy (Cookie)',
+		name: 'zaloAddGroupDeputy',
 		icon: 'file:zalo.png',
 		group: ['Zalo'],
 		version: 1,
-		description: 'Tìm người dùng bằng số điện thoại',
+		description: 'Thêm phó nhóm vào nhóm Zalo',
 		defaults: {
-			name: 'Zalo Find User (Cookie)',
+			name: 'Zalo Add Group Deputy (Cookie)',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
-		// Thêm phần credentials để người dùng nhập thông tin kết nối từ credential
-		// credentials: [
-		// 	{
-		// 		name: 'zaloApi',
-		// 		required: true,
-		// 	},
-		// ],
 		properties: [
 			{
-				displayName: 'Phone Number',
-				name: 'phoneNumber',
+				displayName: 'Group ID',
+				name: 'groupId',
 				type: 'string',
 				default: '',
 				required: true,
-				description: 'Số điện thoại của người dùng cần tìm',
+				description: 'ID của nhóm Zalo',
+			},
+			{
+				displayName: 'User ID',
+				name: 'userId',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'ID của người dùng cần thêm làm phó nhóm',
 			}
-			
+
 		],
 	};
 
@@ -61,20 +62,21 @@ export class ZaloFindUserInformationByPhoneNumber implements INodeType {
         this.logger.info(`API ${JSON.stringify(api)}`);
         console.log('API', api);
 
-      	const phoneNumber = this.getNodeParameter('phoneNumber', 0) as string;
+      	const groupId = this.getNodeParameter('groupId', 0) as string;
+      	const userId = this.getNodeParameter('userId', 0) as string;
         // Gửi tin nhắn một lần
         try {
-            this.logger.info(`Parameters before sending message: ${JSON.stringify(phoneNumber)}`);
+            this.logger.info(`Parameters before sending message: ${JSON.stringify({groupId, userId})}`);
 
-            
-            const response = await api.findUser(phoneNumber);
-            this.logger.info(`Find successfully: ${JSON.stringify(phoneNumber)}`);
+
+            const response = await api.addGroupDeputy(groupId, userId);
+            this.logger.info(`Find successfully: ${JSON.stringify({groupId, userId})}`);
 
             returnData.push({
-                json: response,
+                json: JSON.parse(response),
             });
         } catch (error) {
-            this.logger.error('Error in sendMessage:', { error });
+            this.logger.error('Error in addGroupDeputy:', { error });
             if ((error as any).response) {
                 this.logger.error('Error response:', { response: (error as any).response });
             }
@@ -83,7 +85,7 @@ export class ZaloFindUserInformationByPhoneNumber implements INodeType {
             }
             throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: 0 });
         }
-    
+
         return [returnData];
 	}
 }

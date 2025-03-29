@@ -3,6 +3,7 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionType,
 	NodeOperationError,
 } from 'n8n-workflow';
 import { API, ThreadType, Zalo } from 'zca-js';
@@ -14,14 +15,14 @@ export class ZaloSendMessage implements INodeType {
 		displayName: 'Zalo Send Message (Cookie)',
 		name: 'zaloSendMessageCookie',
 		icon: 'file:zalo.png',
-		group: ['transform'],
+		group: ['Zalo'],
 		version: 1,
 		description: 'Gửi tin nhắn qua API Zalo sử dụng kết nối đăng nhập bằng cookie',
 		defaults: {
 			name: 'Zalo Send Message (Cookie)',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
 		// Thêm phần credentials để người dùng nhập thông tin kết nối từ credential
 		// credentials: [
 		// 	{
