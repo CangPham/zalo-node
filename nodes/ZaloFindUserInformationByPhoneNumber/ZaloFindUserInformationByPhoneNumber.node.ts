@@ -23,13 +23,6 @@ export class ZaloFindUserInformationByPhoneNumber implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
-		// Thêm phần credentials để người dùng nhập thông tin kết nối từ credential
-		// credentials: [
-		// 	{
-		// 		name: 'zaloApi',
-		// 		required: true,
-		// 	},
-		// ],
 		properties: [
 			{
 				displayName: 'Phone Number',
