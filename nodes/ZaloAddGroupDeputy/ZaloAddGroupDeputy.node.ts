@@ -12,17 +12,23 @@ let api: API | undefined;
 export class ZaloAddGroupDeputy implements INodeType {
 
 	description: INodeTypeDescription = {
-		displayName: 'Zalo Add Group Deputy (Cookie)',
+		displayName: 'Zalo Add Group Deputy',
 		name: 'zaloAddGroupDeputy',
 		icon: 'file:zalo.png',
 		group: ['Zalo'],
 		version: 1,
 		description: 'Thêm phó nhóm vào nhóm Zalo',
 		defaults: {
-			name: 'Zalo Add Group Deputy (Cookie)',
+			name: 'Zalo Add Group Deputy',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'zaloApi',
+				required: true,
+			},
+		],
 		properties: [
 			{
 				displayName: 'Group ID',
@@ -46,21 +52,28 @@ export class ZaloAddGroupDeputy implements INodeType {
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const returnData: INodeExecutionData[] = [];
-        const inputs = this.getInputData();
-        console.log('Inputs', inputs);
-        const cookie = inputs.find((x) => x.json.cookie)?.json.cookie as any;
-        const imei = inputs.find((x) => x.json.imei)?.json.imei as string;
-        const userAgent = inputs.find((x) => x.json.userAgent)?.json.userAgent as string;
-        this.logger.info(`Message sent ${JSON.stringify({ cookie, imei, userAgent })}`);
+
+        // Get credentials
+        const credentials = await this.getCredentials('zaloApi');
+
+        // Parse the cookie string into the format expected by zca-js
+        const cookieStr = credentials.cookie as string;
+        const imei = credentials.imei as string;
+        const userAgent = credentials.userAgent as string;
+
+        this.logger.info('Using Zalo API credentials');
 
         const zalo = new Zalo();
-        const _api =  await zalo.login({ cookie, imei, userAgent });
+        // Login with credentials
+        const _api = await zalo.login({
+            cookie: cookieStr,
+            imei,
+            userAgent,
+        } as any); // Use 'as any' to bypass type checking
         api = _api;
         if (!api) {
             throw new NodeOperationError(this.getNode(), 'No API instance found. Please make sure to provide valid credentials.')
         }
-        this.logger.info(`API ${JSON.stringify(api)}`);
-        console.log('API', api);
 
       	const groupId = this.getNodeParameter('groupId', 0) as string;
       	const userId = this.getNodeParameter('userId', 0) as string;

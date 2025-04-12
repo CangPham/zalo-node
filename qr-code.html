@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zalo QR Code</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    
+    h1 {
+      color: #0068FF;
+      margin-bottom: 20px;
+    }
+    
+    img {
+      max-width: 300px;
+      height: auto;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    
+    p {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .instructions {
+      background-color: #f0f8ff;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      text-align: left;
+    }
+    
+    .instructions ol {
+      margin-left: 20px;
+      padding-left: 0;
+    }
+    
+    .instructions li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Zalo QR Code Login</h1>
+    <img id="qr-code" src="qr.png" alt="Zalo QR Code">
+    <p>Scan this QR code with your Zalo app to login</p>
+    
+    <div class="instructions">
+      <h3>Instructions:</h3>
+      <ol>
+        <li>Open Zalo app on your phone</li>
+        <li>Tap on the "Me" tab</li>
+        <li>Tap on the QR code icon in the top-right corner</li>
+        <li>Scan this QR code</li>
+        <li>Confirm the login on your phone</li>
+      </ol>
+    </div>
+  </div>
+  
+  <script>
+    // Refresh the QR code image every 30 seconds
+    setInterval(() => {
+      const qrCode = document.getElementById('qr-code');
+      qrCode.src = 'qr.png?t=' + new Date().getTime();
+    }, 30000);
+  </script>
+</body>
+</html>

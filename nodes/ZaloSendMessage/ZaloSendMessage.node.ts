@@ -23,13 +23,13 @@ export class ZaloSendMessage implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
-		// Thêm phần credentials để người dùng nhập thông tin kết nối từ credential
-		// credentials: [
-		// 	{
-		// 		name: 'zaloApi',
-		// 		required: true,
-		// 	},
-		// ],
+		// Add credentials for Zalo API authentication
+		credentials: [
+			{
+				name: 'zaloApi',
+				required: true,
+			},
+		],
 		properties: [
 			{
 				displayName: 'Thread ID',
@@ -59,15 +59,23 @@ export class ZaloSendMessage implements INodeType {
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const returnData: INodeExecutionData[] = [];
-        const inputs = this.getInputData();
-        console.log('Inputs', inputs);
-        const cookie = inputs.find((x) => x.json.cookie)?.json.cookie as any;
-        const imei = inputs.find((x) => x.json.imei)?.json.imei as string;
-        const userAgent = inputs.find((x) => x.json.userAgent)?.json.userAgent as string;
-        this.logger.info(`Message sent ${JSON.stringify({ cookie, imei, userAgent })}`);
+        // Get credentials
+        const credentials = await this.getCredentials('zaloApi');
+
+        // Parse the cookie string into the format expected by zca-js
+        const cookieStr = credentials.cookie as string;
+        const imei = credentials.imei as string;
+        const userAgent = credentials.userAgent as string;
+
+        this.logger.info('Using Zalo API credentials');
 
         const zalo = new Zalo();
-        const _api =  await zalo.login({ cookie, imei, userAgent });
+        // We need to parse the cookie string into an object that zca-js can use
+        const _api = await zalo.login({
+            cookie: cookieStr,
+            imei,
+            userAgent,
+        } as any); // Use 'as any' to bypass type checking
         api = _api;
         if (!api) {
             throw new NodeOperationError(this.getNode(), 'No API instance found. Please make sure to provide valid credentials.')
@@ -83,12 +91,12 @@ export class ZaloSendMessage implements INodeType {
         try {
             this.logger.info(`Parameters before sending message: ${JSON.stringify(meta)}`);
 
-            
+
             const response = await api.sendMessage({
                 msg: message,
-                
+
             },
-            
+
             threadId,
             type);
 
@@ -106,7 +114,7 @@ export class ZaloSendMessage implements INodeType {
             }
             throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: 0 });
         }
-    
+
         return [returnData];
 	}
 }

@@ -1,0 +1,6 @@
+@echo off
+echo Đang tạo file credentials mẫu...
+node create-sample-credentials.js
+echo.
+echo Nhấn phím bất kỳ để thoát...
+pause > nul

@@ -1,46 +1,44 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# Zalo Integration for n8n
 
-# n8n-nodes-starter
+This is a collection of nodes for n8n that allow you to integrate Zalo into your workflows.
 
-This repo contains example nodes to help you get started building your own custom integrations for [n8n](n8n.io). It includes the node linter and other dependencies.
+## Features
 
-To make your custom node available to the community, you must create it as an npm package, and [submit it to the npm registry](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+- **ZaloLoginViaQRCode**: Login to Zalo via QR code and automatically create credentials
+- **ZaloSendMessage**: Send messages to Zalo contacts
+- **ZaloWebhook**: Receive messages from Zalo
+- And more...
 
-## Prerequisites
+## Installation
 
-You need the following installed on your development machine:
+1. Make sure you have n8n installed
+2. Copy the files in this directory to your n8n directory
+3. Install axios if you don't have it: `npm install axios`
+4. Run `npm run build` to compile the nodes
+5. Start n8n with `n8n start`
 
-* [git](https://git-scm.com/downloads)
-* Node.js and pnpm. Minimum version Node 18. You can find instructions on how to install both using nvm (Node Version Manager) for Linux, Mac, and WSL [here](https://github.com/nvm-sh/nvm). For Windows users, refer to Microsoft's guide to [Install NodeJS on Windows](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows).
-* Install n8n with:
-  ```
-  pnpm install n8n -g
-  ```
-* Recommended: follow n8n's guide to [set up your development environment](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/).
+## Usage
 
-## Using this starter
+See the [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) file for detailed usage instructions.
 
-These are the basic steps for working with the starter. For detailed guidance on creating and publishing nodes, refer to the [documentation](https://docs.n8n.io/integrations/creating-nodes/).
+## Automatic Credential Creation
 
-1. [Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template repository.
-2. Clone your new repo:
-   ```
-   git clone https://github.com/<your organization>/<your-repo-name>.git
-   ```
-3. Run `pnpm i` to install dependencies.
-4. Open the project in your editor.
-5. Browse the examples in `/nodes` and `/credentials`. Modify the examples, or replace them with your own nodes.
-6. Update the `package.json` to match your details.
-7. Run `pnpm lint` to check for errors or `pnpm lintfix` to automatically fix errors when possible.
-8. Test your node locally. Refer to [Run your node locally](https://docs.n8n.io/integrations/creating-nodes/test/run-node-locally/) for guidance.
-9. Replace this README with documentation for your node. Use the [README_TEMPLATE](README_TEMPLATE.md) to get started.
-10. Update the LICENSE file to use your details.
-11. [Publish](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) your package to npm.
+This package includes a script that automatically creates Zalo API credentials in n8n after a successful login. The process works as follows:
 
-## More information
+1. Run the ZaloLoginViaQRCode node with "Create Zalo Credentials" set to true
+2. Scan the QR code with your Zalo app
+3. After successful login, the node saves your credentials to files
+4. Run the auto-create-zalo-credential.js script to create the credentials in n8n
+5. The script automatically checks if n8n is running and creates the credentials
 
-Refer to our [documentation on creating nodes](https://docs.n8n.io/integrations/creating-nodes/) for detailed information on building your own nodes.
+## Files
+
+- **nodes/**: Contains all the Zalo nodes
+- **credentials/**: Contains the Zalo API credential type
+- **create-zalo-credential.js**: Script to create credentials in n8n
+- **auto-create-zalo-credential.js**: Script to automatically create credentials when n8n starts
+- **HUONG-DAN-SU-DUNG.md**: Detailed usage instructions in Vietnamese
 
 ## License
 
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+MIT

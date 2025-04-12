@@ -1,0 +1,254 @@
+import {
+	IExecuteFunctions,
+	INodeExecutionData,
+	INodeType,
+	INodeTypeDescription,
+	NodeOperationError,
+	NodeConnectionType,
+} from 'n8n-workflow';
+import { Zalo } from 'zca-js';
+import * as fs from 'fs';
+import * as path from 'path';
+
+export class ZaloLoginViaQRCode implements INodeType {
+	description: INodeTypeDescription = {
+		displayName: 'Zalo Login Via QR Code',
+		name: 'zaloLoginViaQRCode',
+		group: ['transform'],
+		version: 1,
+		description: 'Login to Zalo via QR Code and return the QR code as a file',
+		defaults: {
+			name: 'Zalo Login Via QR Code',
+		},
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
+		icon: 'file:zalo.png',
+		properties: [
+			{
+				displayName: 'Create Zalo Credentials',
+				name: 'createCredentials',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to create Zalo API credentials after successful login',
+			},
+			{
+				displayName: 'Credential Name',
+				name: 'credentialName',
+				type: 'string',
+				default: 'Zalo API Credentials',
+				description: 'Name for the created credentials',
+				displayOptions: {
+					show: {
+						createCredentials: [true],
+					},
+				},
+			},
+			{
+				displayName: 'Proxy',
+				name: 'proxy',
+				type: 'string',
+				default: '',
+				placeholder: 'https://user:pass@host:port',
+				description: 'HTTP proxy to use for Zalo API requests',
+			},
+			{
+				displayName: 'Timeout',
+				name: 'timeout',
+				type: 'number',
+				default: 30,
+				description: 'Timeout in seconds for QR code generation',
+			},
+			{
+				displayName: 'Output File Name',
+				name: 'fileName',
+				type: 'string',
+				default: 'zalo-qr-code.png',
+				description: 'Name of the output file',
+			},
+		],
+	};
+
+	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		const returnData: INodeExecutionData[] = [];
+		const proxy = this.getNodeParameter('proxy', 0, '') as string;
+		const timeout = this.getNodeParameter('timeout', 0, 30) as number;
+		const fileName = this.getNodeParameter('fileName', 0, 'zalo-qr-code.png') as string;
+		const createCredentials = this.getNodeParameter('createCredentials', 0, true) as boolean;
+
+		try {
+			// Create output directory if it doesn't exist
+			const outputDir = path.join(process.cwd(), 'output');
+			if (!fs.existsSync(outputDir)) {
+				fs.mkdirSync(outputDir);
+			}
+
+			// Create data/cookies directory if it doesn't exist
+			const dataDir = path.join(process.cwd(), 'data');
+			const cookiesDir = path.join(dataDir, 'cookies');
+			if (!fs.existsSync(dataDir)) {
+				fs.mkdirSync(dataDir, { recursive: true });
+			}
+			if (!fs.existsSync(cookiesDir)) {
+				fs.mkdirSync(cookiesDir, { recursive: true });
+			}
+
+			// Initialize Zalo with options
+			const zaloOptions: any = {
+				selfListen: true,
+				logging: true,
+			};
+
+			// Add proxy if provided
+			if (proxy) {
+				zaloOptions.proxy = proxy;
+			}
+
+			// Initialize Zalo
+			const zalo = new Zalo(zaloOptions);
+			console.error('Starting Zalo QR login process...');
+
+			// Function to set up event listeners
+			const setupEventListeners = (api: any, loginResolve: any) => {
+				console.error('Setting up event listeners');
+				
+				// @ts-ignore - Ignore type checking for getContext method
+				api.getContext().then((context: any) => {
+					const cookie = context.cookie || '';
+					const imei = context.imei || '';
+					const userAgent = context.userAgent || '';
+					
+					console.error('=== ZALO CREDENTIALS ===');
+					console.error('Cookie:', cookie ? `Received (length: ${cookie.length})` : 'None');
+					console.error('IMEI:', imei ? imei : 'None');
+					console.error('User Agent:', userAgent ? userAgent : 'None');
+					
+					try {
+						// Save credentials to file
+						const credentialsPath = path.join(outputDir, 'zalo-credentials.json');
+						console.error('Saving credentials to:', credentialsPath);
+						
+						// Create debug file
+						const debugPath = path.join(outputDir, 'zalo-debug.txt');
+						fs.writeFileSync(debugPath, `Login event received at ${new Date().toISOString()}\nCookie: ${cookie ? 'Yes (' + cookie.length + ' chars)' : 'No'}\nIMEI: ${imei ? 'Yes (' + imei.length + ' chars)' : 'No'}\nUserAgent: ${userAgent ? 'Yes (' + userAgent.length + ' chars)' : 'No'}`);
+						console.error('Debug information saved to:', debugPath);
+						
+						// Save credentials to output directory
+						if (cookie || imei || userAgent) {
+							fs.writeFileSync(credentialsPath, JSON.stringify({ cookie, imei, userAgent }, null, 2));
+							console.error('=== ZALO CREDENTIALS SAVED TO OUTPUT ===');
+							console.error('Login information saved to:', credentialsPath);
+							
+							// Save to data/cookies directory with timestamp
+							const timestamp = new Date().getTime();
+							const credFileName = `cred_${timestamp}.json`;
+							const credFilePath = path.join(cookiesDir, credFileName);
+							
+							fs.writeFileSync(credFilePath, JSON.stringify({ imei, cookie, userAgent }, null, 4));
+							console.error(`Credentials saved to file ${credFileName}`);
+						} else {
+							console.error('=== NO CREDENTIALS TO SAVE ===');
+							console.error('No login information available to save');
+						}
+					} catch (fileError) {
+						console.error('Error saving credentials:', fileError);
+					}
+				}).catch((error: any) => {
+					console.error('Error getting context:', error);
+				});
+			};
+
+			// Generate QR code
+			const qrCodePromise = new Promise<string>(async (resolve, reject) => {
+				let isResolved = false;
+				let loginResolve = resolve;
+
+				// Set timeout for QR code generation
+				const timeoutId = setTimeout(() => {
+					if (!isResolved) {
+						isResolved = true;
+						reject(new NodeOperationError(this.getNode(), 'Timeout generating QR code. Please try again or check your Zalo connection.'));
+					}
+				}, timeout * 1000); // Convert seconds to milliseconds
+
+				try {
+					// @ts-ignore - Ignore type checking for loginQR method
+					let api = await zalo.loginQR(null, (qrData: any) => {
+						console.error('Received QR data:', qrData ? 'yes' : 'no');
+						
+						if (qrData?.data?.image) {
+							const qrCodeBase64 = qrData.data.image;
+							console.error('QR code generated, length:', qrCodeBase64.length);
+
+							// If QR code was already resolved, we don't need to do anything
+							if (isResolved) return;
+
+							// Clear timeout
+							clearTimeout(timeoutId);
+
+							// If we have a QR code, resolve with it
+							if (qrCodeBase64) {
+								isResolved = true;
+								resolve(qrCodeBase64);
+							}
+						} else {
+							console.error('Could not get QR code from Zalo SDK');
+							reject(new Error("Could not get QR code"));
+						}
+					});
+
+					// Set up event listeners after getting the API
+					api.listener.onConnected(() => {
+						console.error("Zalo SDK đã kết nối");
+						resolve(true);
+					});
+					
+					console.error('Thiết lập event listeners');
+					setupEventListeners(api, loginResolve);
+					api.listener.start();
+				} catch (error) {
+					// Clear timeout
+					clearTimeout(timeoutId);
+
+					if (!isResolved) {
+						isResolved = true;
+						reject(error);
+					}
+				}
+			});
+
+			// Wait for QR code to be generated
+			const qrCodeBase64 = await qrCodePromise;
+
+			// Create a binary buffer from the base64 string
+			const binaryData = Buffer.from(qrCodeBase64, 'base64');
+
+			// Create a new item with the QR code as binary data
+			const newItem: INodeExecutionData = {
+				json: {
+					success: true,
+					message: 'QR code generated successfully. Scan with Zalo app to login.',
+					fileName,
+					createCredentials,
+					credentialName: createCredentials ? this.getNodeParameter('credentialName', 0, 'Zalo API Credentials') : '',
+				},
+				binary: {
+					data: await this.helpers.prepareBinaryData(binaryData, fileName, 'image/png'),
+				},
+			};
+
+			returnData.push(newItem);
+		} catch (error) {
+			if (this.continueOnFail()) {
+				const executionData = this.helpers.constructExecutionMetaData(
+					this.helpers.returnJsonArray({ error: error.message }),
+					{ itemData: { item: 0 } },
+				);
+				returnData.push(...executionData);
+			} else {
+				throw error;
+			}
+		}
+
+		return [returnData];
+	}
+}

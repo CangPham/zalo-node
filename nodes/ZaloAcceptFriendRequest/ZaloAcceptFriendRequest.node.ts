@@ -11,17 +11,23 @@ let api: API | undefined;
 
 export class ZaloAcceptFriendRequest implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Zalo Accept Friend Request (Cookie)',
+		displayName: 'Zalo Accept Friend Request',
 		name: 'zaloAcceptFriendRequestCookie',
 		icon: 'file:zalo.png',
 		group: ['Zalo'],
 		version: 1,
 		description: 'Chấp nhận lời mời kết bạn qua API Zalo sử dụng kết nối đăng nhập bằng cookie',
 		defaults: {
-			name: 'Zalo Accept Friend Request (Cookie)',
+			name: 'Zalo Accept Friend Request',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'zaloApi',
+				required: true,
+			},
+		],
 		properties: [
 			{
 				displayName: 'User ID',
@@ -36,13 +42,24 @@ export class ZaloAcceptFriendRequest implements INodeType {
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const returnData: INodeExecutionData[] = [];
-		const inputs = this.getInputData();
-		const cookie = inputs.find((x: any) => x.json.cookie)?.json.cookie as any;
-		const imei = inputs.find((x: any) => x.json.imei)?.json.imei as string;
-		const userAgent = inputs.find((x: any) => x.json.userAgent)?.json.userAgent as string;
+
+		// Get credentials
+		const credentials = await this.getCredentials('zaloApi');
+
+		// Parse the cookie string into the format expected by zca-js
+		const cookieStr = credentials.cookie as string;
+		const imei = credentials.imei as string;
+		const userAgent = credentials.userAgent as string;
+
+		this.logger.info('Using Zalo API credentials');
 
 		const zalo = new Zalo();
-		const _api = await zalo.login({ cookie, imei, userAgent });
+		// Login with credentials
+		const _api = await zalo.login({
+			cookie: cookieStr,
+			imei,
+			userAgent,
+		} as any); // Use 'as any' to bypass type checking
 		api = _api;
 		if (!api) {
 			throw new NodeOperationError(

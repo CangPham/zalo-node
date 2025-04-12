@@ -1,0 +1,6 @@
+@echo off
+echo Đang kiểm tra thông tin đăng nhập Zalo...
+node check-zalo-credentials.js
+echo.
+echo Nhấn phím bất kỳ để thoát...
+pause > nul

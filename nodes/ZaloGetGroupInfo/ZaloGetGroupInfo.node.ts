@@ -22,6 +22,12 @@ export class ZaloGetGroupInfo implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'zaloApi',
+				required: true,
+			},
+		],
 		properties: [
 			{
 				displayName: 'Group ID',
@@ -35,13 +41,24 @@ export class ZaloGetGroupInfo implements INodeType {
 	};
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const returnData: INodeExecutionData[] = [];
-		const inputs = this.getInputData();
-		const cookie = inputs.find((x: any) => x.json.cookie)?.json.cookie as any;
-		const imei = inputs.find((x: any) => x.json.imei)?.json.imei as string;
-		const userAgent = inputs.find((x: any) => x.json.userAgent)?.json.userAgent as string;
+
+		// Get credentials
+		const credentials = await this.getCredentials('zaloApi');
+
+		// Parse the cookie string into the format expected by zca-js
+		const cookieStr = credentials.cookie as string;
+		const imei = credentials.imei as string;
+		const userAgent = credentials.userAgent as string;
+
+		this.logger.info('Using Zalo API credentials');
 
 		const zalo = new Zalo();
-		const _api = await zalo.login({ cookie, imei, userAgent });
+		// Login with credentials
+		const _api = await zalo.login({
+			cookie: cookieStr,
+			imei,
+			userAgent,
+		} as any); // Use 'as any' to bypass type checking
 		api = _api;
 		if (!api) {
 			throw new NodeOperationError(
